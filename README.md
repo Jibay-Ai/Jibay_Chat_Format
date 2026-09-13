@@ -1,8 +1,11 @@
 # Jibay Chat Format (JCF)
 
-**Version:** 3.0
+**Version:** 1.0.0
+
 **Author:** JibayAI
+
 **Status:** Production — used to train select Jibay models
+
 **File:** `chat_template.jinja`
 
 Jibay Chat Format (JCF) is a purpose-built chat templating specification designed as a lighter, clearer, and more structurally explicit alternative to ChatML and OpenAI's Harmony format. It was created to solve real problems observed while operating a production, self-hosted, multi-user LLM inference stack (Qwen-family models on `llama.cpp`/`ik_llama.cpp`) — problems around token overhead, prefix-cache stability, ambiguous role boundaries, and inconsistent reasoning/thinking control.
@@ -365,3 +368,5 @@ A: Yes — it is evaluated per-render, so each turn can request a different effo
 
 **Q: What happens if I set `show_thinking=false` but `enable_thinking=true`?**
 A: The model still reasons internally (server-side), but the reasoning block is omitted from what's rendered back into the transcript for that turn — useful for hiding chain-of-thought from end users while still benefiting from it internally, and while still logging it separately server-side if desired.
+
+By JibayAI – MIT – jibay.ir
