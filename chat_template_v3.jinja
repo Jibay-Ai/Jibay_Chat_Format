@@ -1,0 +1,118 @@
+{#- Jibay Chat Format (JCF) v3 - chat_template.jinja -#}
+
+{%- set valid_efforts = ['Low', 'Medium', 'High', 'xHigh', 'Max', 'Pro', 'Ultra'] -%}
+{%- set effort = (reasoning_effort if (reasoning_effort is defined and reasoning_effort in valid_efforts) else 'Medium') -%}
+{%- set thinking_enabled = (enable_thinking if (enable_thinking is defined and enable_thinking in [true, false]) else true) -%}
+{%- set show_thinking = (show_thinking if (show_thinking is defined and show_thinking in [true, false]) else true) -%}
+{%- set show_summary = (show_summary if (show_summary is defined and show_summary in [true, false]) else true) -%}
+{%- set default_system = 'You are Jibay, developed by JibayAI. You are a helpful and safe assistant and have a natural and human-like tone.' -%}
+{%- set msgs = (messages if messages is defined and messages is iterable else []) -%}
+
+{#- developer (اختیاری) -#}
+{%- if msgs|length > 0 and msgs[0]['role'] == 'developer' and msgs[0]['content'] -%}
+<[role_developer]>
+{{ msgs[0]['content'] }}
+<[role_developer_end]>
+{%- set msgs = msgs[1:] -%}
+{%- endif -%}
+
+{#- system (همیشه، خالی بود پیش‌فرض) -#}
+{%- if msgs|length > 0 and msgs[0]['role'] == 'system' -%}
+<[role_system]>
+{{ msgs[0]['content'] if msgs[0]['content'] else default_system }}
+{%- set msgs = msgs[1:] -%}
+{%- else -%}
+<[role_system]>
+{{ default_system }}
+{%- endif -%}
+{%- if safety_message is defined and safety_message -%}
+<[role_safety]>
+{{ safety_message }}
+<[role_safety_end]>
+{%- endif -%}
+{%- if notes is defined and notes -%}
+<[role_notes]>
+{{ notes }}
+<[role_notes_end]>
+{%- endif -%}
+{%- if environment is defined and environment -%}
+<[role_environment]>
+{{ environment }}
+<[role_environment_end]>
+{%- endif -%}
+{%- if context is defined and context -%}
+<[role_context]>
+{{ context }}
+<[role_context_end]>
+{%- endif -%}
+{%- if retrieval is defined and retrieval -%}
+<[role_retrieval]>
+{{ retrieval }}
+<[role_retrieval_end]>
+{%- endif -%}
+<[role_system_end]>
+
+<[role_reasoning_effort]>
+Reasoning Effort is {{ effort }}
+<[role_reasoning_effort_end]>
+
+{%- if memory_context is defined and memory_context -%}
+<[role_memory]>
+{{ memory_context }}
+<[role_memory_end]>
+{%- endif -%}
+
+{%- if input_files is defined and input_files -%}
+<[role_input_files]>
+{{ input_files }}
+<[role_input_files_end]>
+{%- endif -%}
+
+{%- if tools is defined and tools -%}
+<[role_tools]>
+{{ tools | tojson }}
+<[role_tools_end]>
+{%- endif -%}
+
+{%- for message in msgs -%}
+  {%- set is_last = loop.last -%}
+
+  {%- if message['role'] == 'user' and message['content'] -%}
+<[role_user]>
+{{ message['content'] }}
+<[role_user_end]>
+
+  {%- elif message['role'] == 'tool' and message['content'] -%}
+<[role_tools_response]>
+{{ message['content'] }}
+<[role_tools_response_end]>
+
+  {%- elif message['role'] == 'assistant' -%}
+<[role_assistant]>
+    {#- تفکر/خلاصه فقط برای آخرین پیام و طبق فلگ‌ها؛ در تاریخچه همیشه حذف -#}
+    {%- if is_last and thinking_enabled and show_thinking and message['reasoning'] is defined and message['reasoning'] -%}
+<[reasoning]>
+{{ message['reasoning'] }}
+      {%- if show_summary and message['summary'] is defined and message['summary'] -%}
+<[summary]>
+{{ message['summary'] }}
+<[summary_end]>
+      {%- endif -%}
+<[reasoning_end]>
+    {%- endif -%}
+    {%- if message['tool_calls'] is defined and message['tool_calls'] -%}
+{{ message['tool_calls'] | tojson }}
+    {%- elif message['content'] -%}
+{{ message['content'] }}
+    {%- endif -%}
+<[role_assistant_end]>
+  {%- endif -%}
+
+{%- endfor -%}
+
+{%- if add_generation_prompt -%}
+<[role_assistant]>
+{%- if not thinking_enabled -%}
+<[reasoning_end]>
+{%- endif -%}
+{%- endif -%}
